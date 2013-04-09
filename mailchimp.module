@@ -389,6 +389,9 @@ function mailchimp_process_webhook() {
       break;
   }
 
+  // let modules do things
+  module_invoke_all('mailchimp_webhook', $_POST['type'], $data);
+
   // log event
   watchdog('mailchimp', 'Webhook type @type has been processed.',
     array('@type' => $_POST['type']), WATCHDOG_INFO
