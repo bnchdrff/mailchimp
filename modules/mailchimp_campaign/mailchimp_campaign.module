@@ -145,6 +145,11 @@ function mailchimp_campaign_overview_page() {
       l(t('View'), 'admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id),
     );
 
+    $context = array(
+      'campaign' => clone $campaign,
+    );
+    drupal_alter('mailchimp_campaign_actions', $actions, $context);
+
     $rows[] = array(
       l($campaign->label(),
         'admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id),
