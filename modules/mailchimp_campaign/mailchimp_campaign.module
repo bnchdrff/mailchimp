@@ -136,6 +136,8 @@ function mailchimp_campaign_overview_page() {
   $campaigns = mailchimp_campaign_load_multiple();
   $templates = mailchimp_campaign_get_templates();
 
+  usort($campaigns, '_mailchimp_campaign_sort_by_created');
+
   $rows = array();
   foreach ($campaigns as $campaign) {
     $actions = array(
@@ -150,16 +152,23 @@ function mailchimp_campaign_overview_page() {
     );
     drupal_alter('mailchimp_campaign_actions', $actions, $context);
 
+    if (is_array($campaign->template['header'])) {
+      $subject = $campaign->template['header']['value'];
+    }
+    else {
+      $subject = '';
+    }
+
     $rows[] = array(
       l($campaign->label(),
         'admin/config/services/mailchimp/campaigns/' . $campaign->mc_campaign_id),
-      $campaign->mc_data['subject'],
+      $subject,
       $campaign->mc_data['status'],
       l($campaign->list['name'], 'https://admin.mailchimp.com/lists/dashboard/overview?id=' . $campaign->list['web_id'], array(
         'attributes' => array('target' => '_blank'),
       )),
       isset($templates[$campaign->mc_data['template_id']]) ? $templates[$campaign->mc_data['template_id']]['name'] : '',
-      $campaign->mc_data['create_time'],
+      format_date($campaign->created),
       implode(' | ', $actions)
     );
   }
@@ -177,6 +186,15 @@ function mailchimp_campaign_overview_page() {
     ),
     '#rows' => $rows
   );
+}
+
+function _mailchimp_campaign_sort_by_created($a, $b) {
+  $one = $a->created;
+  $two = $b->created;
+  if ($one == $two) {
+    return 0;
+  }
+  return ($one < $two) ? +1 : -1;
 }
 
 /**
@@ -543,8 +561,14 @@ function mailchimp_campaign_stats_page(MailChimpCampaign $campaign) {
  */
 function mailchimp_campaign_render_template($template) {
   $content = array();
+
   foreach ($template as $key => $part) {
-    $content[$key] = check_markup($part['value'], $part['format']);
+    if (is_array($part)) {
+      $content[$key] = check_markup($part['value'], $part['format']);
+    }
+    else {
+      $content[$key] = $part;
+    }
   }
 
   return $content;
